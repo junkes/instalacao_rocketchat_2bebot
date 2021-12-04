@@ -14,7 +14,7 @@ echo " "
 echo "instalar rocketchat-server via snap"
 echo " "
 snap install rocketchat-server
-sleep 5
+sleep 10
 
 echo " "
 echo "iniciar rocketchat-server"
