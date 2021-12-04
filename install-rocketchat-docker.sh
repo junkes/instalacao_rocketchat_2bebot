@@ -12,7 +12,7 @@ apt autoremove -y
 
 echo " "
 echo " "
-echo "instalar pacotes ca-certificates, gnupg e lsb-release"
+echo "instalar pacotes ca-certificates, curl, gnupg e lsb-release"
 echo " "
 apt install -y ca-certificates curl gnupg lsb-release
 
