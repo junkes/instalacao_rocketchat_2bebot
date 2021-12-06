@@ -1,5 +1,15 @@
 portaRocket=""
 portaMongo=""
+portasMongoDocker=""
+mongoMsg="Acesse o mongo de dentro do docker \nExecute: docker exec -it db mongo"
+
+echo " "
+echo " "
+echo "atualizar repositórios"
+echo " "
+apt update
+echo " "
+echo " "
 
 while [ "$portaRocket" = "" ]; do
 read -p "Informe a porta que será usada para expor o rocket.chat: " portaRocket
@@ -15,13 +25,14 @@ if [ "$portaMongo" = "" ]; then
   echo "Mongo não será exposto"
 else
   echo "Mongo será exposto através da porta $portaMongo"
+  portasMongoDocker="-p $portaMongo:27017"
+  mongoMsg="Acesse o mongo fora do docker através da porta $portaMongo \nExecute: mongo --port $portaMongo"
+  echo " "
+  echo " "
+  echo "instalar mongodb-clients"
+  echo " "
+  apt install -y mongodb-clients
 fi
-
-echo " "
-echo " "
-echo "atualizar repositórios"
-echo " "
-apt update
 
 echo " "
 echo " "
@@ -57,11 +68,7 @@ echo " "
 echo "subir o container mongo"
 echo " "
 
-if [ "$portaMongo" = "" ]; then
-  docker run --name db -d mongo:4.0 --smallfiles --replSet rs0 --oplogSize 128
-else
-  docker run --name db -p $portaMongo:27017 -d mongo:4.0 --smallfiles --replSet rs0 --oplogSize 128
-fi
+docker run --name db $portasMongoDocker -d mongo:4.0 --smallfiles --replSet rs0 --oplogSize 128
 
 echo " "
 echo " "
@@ -97,14 +104,6 @@ echo "listar bancos no mongodb"
 echo " "
 docker exec -ti db mongo --eval "db.adminCommand('listDatabases');"
 
-if [ "$portaMongo" != "" ]; then
-  echo " "
-  echo " "
-  echo "instalar pacote mongodb-clients"
-  echo " "
-  apt install -y mongodb-clients
-fi
-
 echo " "
 echo " "
 echo "aguardar 10 segundos"
@@ -114,15 +113,8 @@ echo " "
 echo " "
 echo "acesse o rocket.chat pelo endereço http://$(hostname -I | awk '{print $1}'):$portaRocket/"
 
-if [ "$portaMongo" != "" ]; then
-  echo " "
-  echo "acesse o mongo fora do docker através da porta $portaMongo"
-  echo "execute: mongo --port $portaMongo"
-else
-  echo " "
-  echo "acesse o mongo de dentro do docker"
-  echo "execute: docker exec -it db mongo"
-fi
+echo " "
+echo $mongoMsg
 
 echo " "
 echo " "
