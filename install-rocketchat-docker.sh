@@ -1,3 +1,24 @@
+portaRocket=""
+portaMongo=""
+
+while [ "$portaRocket" = "" ]; do
+read -p "Informe a porta que será usada para expor o rocket.chat: " portaRocket
+done
+
+echo " "
+echo "Rocket.chat será exposto através da porta $portaRocket"
+echo " "
+read -p "Informe a porta que será usada para expor o mongodb ou deixe em branco para não expor porta para ele: " portaMongo
+echo " "
+
+if [ "$portaMongo" = "" ]; then
+  echo "Mongo não será exposto"
+else
+  echo "Mongo será exposto através da porta $portaMongo"
+fi
+
+echo " "
+echo " "
 echo "atualizar repositórios"
 echo " "
 apt update
@@ -35,8 +56,17 @@ echo " "
 echo " "
 echo "subir o container mongo"
 echo " "
-docker run --name db -d mongo:4.0 --smallfiles --replSet rs0 --oplogSize 128
-sleep 3
+
+if [ "$portaMongo" = "" ]; then
+  docker run --name db -d mongo:4.0 --smallfiles --replSet rs0 --oplogSize 128
+else
+  docker run --name db -p $portaMongo:27017 -d mongo:4.0 --smallfiles --replSet rs0 --oplogSize 128
+fi
+
+echo " "
+echo " "
+echo "aguardar 5 segundos"
+sleep 5
 
 echo " "
 echo " "
@@ -46,9 +76,14 @@ docker exec -ti db mongo --eval "printjson(rs.initiate())"
 
 echo " "
 echo " "
+echo "aguardar 5 segundos"
+sleep 5
+
+echo " "
+echo " "
 echo "subir o container rocket.chat"
 echo " "
-docker run --name rocketchat -p 3000:3000 --link db --env ROOT_URL="http://$(hostname -I | awk '{print $1}'):3000/" --env MONGO_OPLOG_URL=mongodb://db:27017/local -d rocket.chat
+docker run --name rocketchat -p $portaRocket:3000 --link db --env ROOT_URL="http://$(hostname -I | awk '{print $1}'):$portaRocket/" --env MONGO_OPLOG_URL=mongodb://db:27017/local -d rocket.chat
 
 echo " "
 echo " "
@@ -61,3 +96,36 @@ echo " "
 echo "listar bancos no mongodb"
 echo " "
 docker exec -ti db mongo --eval "db.adminCommand('listDatabases');"
+
+if [ "$portaMongo" != "" ]; then
+  echo " "
+  echo " "
+  echo "instalar pacote mongodb-clients"
+  echo " "
+  apt install -y mongodb-clients
+fi
+
+echo " "
+echo " "
+echo "aguardar 10 segundos"
+sleep 10
+
+echo " "
+echo " "
+echo "acesse o rocket.chat pelo endereço http://$(hostname -I | awk '{print $1}'):$portaRocket/"
+
+if [ "$portaMongo" != "" ]; then
+  echo " "
+  echo "acesse o mongo fora do docker através da porta $portaMongo"
+  echo "execute: mongo --port $portaMongo"
+else
+  echo " "
+  echo "acesse o mongo de dentro do docker"
+  echo "execute: docker exec -it db mongo"
+fi
+
+echo " "
+echo " "
+echo "FIM"
+echo " "
+echo " "
